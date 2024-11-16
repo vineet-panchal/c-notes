@@ -1,0 +1,106 @@
+SOME FUNCTIONS FROM LECTURE
+  -See man page (section 3) for prototypes, library, usage, etc.
+   e.g., man 3 exit
+  -Note that "man getline" has a complete program which has much
+   useful code in it. It uses fwrite which we didn't cover, but
+   you could use printf instead.
+
+READING DATA FROM stdin:
+scanf     -read data using format specifiers
+           scanf("%c %d", &ch, &j);
+getchar   -read one character
+           while ((c=getchar())!='\n'); //discards rest of line
+gets      -read a string
+           char S[20]; gets(S);
+readline  -read one line with prompt
+           char *S = readline("enter line:"); //discards '\n'
+
+READING DATA FROM stream:
+fscanf    -like scanf but read data from stream
+           fscanf(stdin, "%d", &i);
+getc      -read one character from stream
+           while((c=getc(stdin)) != EOF)
+fgetc     -similar to getc
+           ch=fgetc(stdin);
+fgets     -read string
+           char S[7]; fgets(str,5,stdin); //leaving room for '\n' '\0'
+getline   -read one line
+           man getline contains a complete program showing how to use it
+
+WRITING DATA TO stdout:
+printf    -write data using format specifiers
+           printf("values are: X=%d, S=%s, Ch=%c\n", X,S,Ch);
+putchar   -write one character
+           for (c='a'; c<='z'; c++) putchar(c);
+puts      -write string and a trailing '\n'
+           char S[4]="abc"; puts(S);
+
+WRITING DATA TO stream:
+fprintf  -like printf but write to stream
+          fprintf(stderr, "Cannot open %s\n",argv[1]);
+putc     -write one character
+          char *cptr=S; while (*cptr) putc(*cptr++,stdout); //prints S
+fputc    -like putc
+          char *cptr=S; while (*cptr !='\0') fputc(*cptr++,stdout); //prints S
+fputs    -print string
+          char ErrMsg[]="Bad Input"; fputs(ErrMsg,stderr);
+
+READING/WRITING TO/FROM STRING:
+sscanf   -read data from string using format specifiers
+          sscanf(S,"%d %d",&i,&j); //read 2 ints from string S
+sprintf  -write data to string using format specifiers
+          float f=3.17; sprintf(T,"%.1f",f); //T gets "3.2" including '\0'
+
+DYNAMIC MEMORY ALLOCATION:
+malloc   -allocate memory without initialization
+          char *S=(char *)malloc(n*sizeof(char)); //space for n chars
+calloc   -allocate memory and initialize to zeros
+          int *p=(int *)calloc(n,sizeof(int)); //space for n ints
+free     -free memory obtained with malloc/calloc
+          free(p);
+
+FILE PROCESSING:
+fopen    -open a file
+          FILE *fp;
+          if ((fp=fopen("F1","r"))==NULL) {puts("OOPS"); exit(1);}
+fclose   -close a file
+          fclose(fp);
+
+CHARACTER FUNCTIONS:
+isdigit  -checks for a digit (0 through 9)
+          if (isdigit(X)) printf("X is a digit\n");
+isupper  -checks for an upper case letter
+          if (isupper(X)) printf("X is upper case\n");
+toupper  -return uppercase of argument
+          printf("%c", toupper('q')); //prints Q
+
+STRING FUNCTIONS:
+strcpy   -copy second string into first
+          char T[10], S[]="hi"; strcpy(T,S); puts(T); //prints "hi"
+strcat   -append second string onto end of first
+          char T[5]="hi", S[3]="gh"; strcat(T,S); puts(T); //prints "high"
+strcmp   -compares strings, returning: -1, 0, or 1
+          printf ("%d\n",strcmp("abc","de")); //prints -1
+          printf ("%d\n",strcmp("de","de"));  //prints 0
+strlen   -returns string length
+          printf ("%ld\n",strlen("abcd"));    //prints 4
+strchr   -returns pointer to character in string, or NULL if not found
+          char *S="abxcd", *p=strchr(S,'x');
+          if (p!=NULL) puts("found an x in S"); //prints "found an ..."
+strchrnul -like strchr except if not found returns pointer to
+           the '\0' at the end of the string
+           *(strchrnul(S,'\n'))='\0';  //remove newline, if there
+atoi      -converts string to corresponding integer
+           char S[]="42"; printf("%d\n",atoi(S)+1); //prints 43
+           int i=atoi(argv[2]); //converts second Command Line Argument
+                                //from string to int
+atof      -converts string to corresponding float
+           char M[]="4.3"; printf("%.1f\n",atof(M)+1); //prints 5.3
+
+SOME OTHER FUNCTIONS:
+sqrt     -returns square root of argument
+          printf("%3.2lf\n",sqrt(19)); //prints 4.36
+exit     -terminate program
+          exit(1);
+srand    -seed the random number generator
+

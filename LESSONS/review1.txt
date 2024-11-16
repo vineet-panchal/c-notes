@@ -1,0 +1,208 @@
+FUNCTIONS:
+- define functions with a return type, specify the parameters and their type.
+- void functions don't return anything
+
+Ex: A function to add two integers
+int addNums(int num1, int num2) {
+  int result = num1 + num2;
+  return result;
+}
+int res = addNums(7, 8);
+
+- variables only exist in their body of code
+- local variables can't be accessed in other functions or bodies of code
+
+
+ARRAYS:
+- collection of elements, define the type
+Ex: int numbers[] = {0, 1, 2, 3, 4};
+Ex: char letters[4]; letters[0] = 'e'; letters[1] = 'a'; letters[2] = 't'
+
+- variables storing the array, refer to the first address in memory
+| 4000 | 4001 | 4002 | 4003 | 4004 | 4005 |
+|  --  |  e   |  a   |  t   |  --  |  --  |
+
+
+STRINGS:
+- strings are an array of chars
+- null character \0 is at the end of the array of chars
+Ex: char name[] = "Steve"; ==> | S | t | e | v | e | \0 |
+
+
+ITERATING THROUGH ARRAYS & STRINGS:
+int size = sizeof(arr) / sizeof(arr[0]);
+// sizeof(arr) gets total size of array in bytes
+// sizeof(arr[0]) gets the bytes of a single element in the array
+for (int i = 0; i < size; i++) {
+  printf("%d ", arr[i]);
+}
+
+int i = 0;
+while (letter[i] != '\0') {
+  printf("%c", letter[i]);
+  i++;
+}
+
+
+2D ARRAYS:
+Ex: int grid[3][2] = {{0, 1}, {2, 3}, {4, 5}};
+
+- array of strings is a 2D array of chars
+Ex: char names[3][10] = {"Steve", "John", "Alice"};
+
+
+POINTERS:
+- pointers are a special type of data that stores an address instead of data
+- the pointer type is used to track what kind of data is stored
+
+Ex: Use a pointer to track a variables
+int x = 15; 
+int *p;  // creating a pointer (write * in front of name of the pointer)
+p = &x;  // p is now a pointer to x, p holds the address of x
+*p = 20;  // change the value of p's stored address
+printf("%d\n", x); >> 20  // x's value is changed through pointer
+printf("%d\n", *p); >> 20  // can access the value using pointer
+printf("%p\n", p); >> 0x7fffcf9a  // address of x
+
+*** to access values & to change values, use *pointer
+- pointers as parameters are: int *p
+
+
+READ/WRITE variables
+printf("%d", myVal);  // reads the value
+scanf("%d", &myVal);  // writes the value
+
+
+POINTERS TO ARRAYS:
+- array values store the location of the first value
+- pointer stores the location of a value
+
+Ex: pointer pointing to array
+int addTwo1(int *nums) {
+  int *p = nums;  // get pointer to array
+  int val = *p;  // get first value in array
+  p = p + 1;  // increment pointer to the location of the second element
+  val += *p;  // add second element to val
+  return val;
+}
+
+int addTwo(int *nums) {
+  return *nums + *(nums + 1);
+}
+
+int addTwo3(int *nums) {
+  return nums[0] + nums[1];
+}
+
+int addTwo4(int nums[]) {
+  return nums[0] + nums[1];
+}
+
+
+2D ARRAYS & POINTERS:
+int grid[3][3] = {{0, 0, 0}, {1, 1, 1}, {2, 2, 2}};
+**grid = 17;
+printf("%d\n", grid[0][0]); >> 17
+*(*(grid + 2) + 1) = 8;
+for (int i = 0; i < 9; i++) {
+  printf("%d ", grid[i/3][i%3]);
+} >> 17 0 0 1 1 1 2 8 2
+
+
+MULTIPLE INDIRECTION:
+void changeVar(int *x) {
+  *x = 1;
+}
+int w = 0;
+changeVar(&w);
+
+- when passing a variable that we want to modify into ta function,
+  pass a pointer to that variable.
+- the function receives a pointer
+
+void newPointer(int **p) {
+  *p = malloc(2 * sizeof(int))
+  (*p)[0] = 1;
+  (*p)[1] = 2;
+}
+int *p;
+newPointer(&p);
+
+- when passing a pointer that we want to have a new stored address
+  (not change the address, change what it points to), we pass an 
+  address to the pointer.
+- the function receives a pointer to a pointer.
+
+
+Ex: Create a function that takes in a 2D array int, one int, & two int pointers.
+Assume every array has 3 columns. Find the location of the largest element in the
+array & return the row & col index values.
+
+#include <stdio.h>
+#include <stdlib.h>
+void findMax(int A[][3], int numRows, int *foundX, int *foundY) {
+  int currMax = A[0][0];
+  int *foundX = 0;
+  int *foundY = 0;
+  for (int i = 0; i < numRows; i++) {
+    for (int j = 0; j < 3; j++) {
+      if (currMax < A[i][j]) {
+        currMax = A[i][j];
+        foundX = &i;
+        foundY = &j;
+        // *foundX = i;
+        // *foundY = j;
+      }
+    }
+  }
+}
+
+
+MALLOC & CALLOC:
+- malloc: returns a pointer to a block of memory of size bytes.
+- provide it with the total size needed in bytes, elements are uninitialized.
+- need to cast it to the correct pointer type, otherwise its a void pointer.
+
+Ex: int* newArr = (int*) malloc(3*sizeof(int));
+
+- calloc: returns a pointer to a block of memory of size bytes,
+- provide the # of elements and the size of each element in two arguments.
+
+Ex: int* newArr = (int*) calloc(3, sizeof(int));
+
+
+Ex: Create a function that receives a float pointer (array), & and int for length
+of array as input. Create a copy of the last half of the input array and return a
+pointer to that array.
+Ex: Original: [2.3, 6.5, 8.3, 9.01, -5.404] ==> [8.2, 9.01, -5.404]
+Ex: Original: [88.888, 102.0, 123.12, 415.5] ==> [123.12, 415.5]
+
+#include <stdio.h>
+#include <stdlib.h>
+void lastHalf(int values[], int length) {
+  int newLength;
+  int (length % 2 == 0) {
+    newLength = length / 2;
+  } else {
+    newLength = (length - 1) / 2;
+  }
+  int *newArray = (int*) malloc(newLength * sizeof(int));
+  j = length / 2;
+  for (int i = 0; i < newLength; i++) {
+    newArray[i] = values[j];
+    j++;
+  }
+  return newArray;
+}
+
+
+COMMAND LINE PROCESSING:
+int main(int argc, char *argv[]);
+
+
+FILE INPUT/OUTPUT:
+FILE *myFile;  // create a file obkect of type FILE
+myFile = fopen("outputFile.txt", "w");
+fclose(myFile);
+fprintf(myFile, "This is the first line of text \n");
+fscanf(myFile, "%d", &i);

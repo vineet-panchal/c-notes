@@ -1,0 +1,745 @@
+
+<<< Structures >>>
+
+-similar to NamedTuple in python
+-similar to using a class in Java
+-similar to using defclass/CLOS in Lisp
+
+just as group items of same type into:     arrays
+can group items of dissimilar types into:  structures
+
+       struct s-name {
+                type item1;
+                type item2;
+                   . . .
+                type itemN;
+        } ;
+
+
+e.g., a struct to describe cars (in struct1.c)
+  struct car {
+               char make[40];
+               char model[40];
+               unsigned int year;
+               float price;
+         } ;
+
+  struct car chan, woit;  //2 cars
+
+OR could declare variables in the struct definition, as in:
+  struct car {
+               char make[40];
+               char model[40];
+               unsigned int year;
+               float price;
+         } chan, woit;    //2 cars
+
+
+
+Assign woit's car:
+  strcpy(woit.make, "Ferrari");
+  strcpy(woit.model, "California T");
+  woit.year = 2017;
+  woit.price = 198190.00;
+
+Read in chan's car:
+  scanf("%s", chan.make);  //Porsche
+  gets(chan.model);        //Carrera
+  scanf("%u %f", &chan.year, &chan.price); //2023 220000
+
+
+
+Can return a structure to a calling program:
+
+/*Source: struct6.c*/
+#include <stdio.h>
+//declare global type (so in scope ReadComplex too)
+struct complex {
+                 int r;
+                 int i;
+       } ;
+struct complex ReadComplex(void);
+
+int main(void) {
+  struct complex X;
+  X=ReadComplex();
+  printf("%d + %di\n",X.r, X.i);
+  return 0;
+}
+struct complex ReadComplex(void) {
+  struct complex temp;
+  scanf("%d %d", &temp.r, &temp.i);
+  return(temp);
+}
+
+
+data from temp *copied* into storage set aside for X
+
+
+
+<<< Typedefs >>>
+
+  -defines another name for a type
+  -then use it like any other type
+  -could use #define, but
+     -typedef obeys compiler scoping rules
+     -cannot do some things with #define (see below)
+
+//Source:  typedef1.c
+#include <stdio.h>
+int main (void) {
+  typedef short unsigned int suint;
+  suint x,y;
+  printf("Enter unsigned short ints x and y: ");
+  scanf("%hu %hu",&x,&y);
+  printf("x=%hu y=%hu\n",x,y);
+}
+
+  -something you cannot do with define is:
+   typedef int* intPtr;
+   intPtr px, py;  //both are int pointers
+
+  -with define:
+   define int* intPtr;
+   intPtr px, py; // expands to int* px, py; which is: int *px, py;
+                  // which means px is int pointer, but py is just int.
+
+
+  -typedef often used with structs
+
+  -struct1.c has this:
+
+        struct car {
+               char make[40];
+               char model[40];
+               unsigned int year;
+               float price;
+        } ;
+        struct car chan, woit;  // 2 cars
+
+
+  -struct2.c does same but using typedef
+  -car now is the type of our structure:
+
+  typedef struct {
+               char make[40];
+               char model[40];
+               unsigned int year;
+               float price;
+         } car;              // car is our defined type
+  car chan, woit;            // 2 cars
+
+
+
+
+
+
+<<Pointers to Structures>>
+      100  104         508
+   ------------------------
+ ... |   |   |       |    | ...
+   ------------------------
+      c                p
+struct complex {
+     int r;
+     int i;
+} c, *p;
+
+p=&c;
+
+(*p).r = 4;  //Same as c.r=4;
+  p->r = 4;  //is alternate syntax
+
+      100  104         508
+   ------------------------
+ ... | 4 |   |       |100 | ...
+   ------------------------
+      c                p
+
+can pass a pointer-to-a-structure to a function instead
+of the structure itself
+  -to change value of structure inside function
+  -saves execution time/memory since structure could be huge
+   but a ptr is usually 8 bytes (if just pass structure,
+   a *copy* of it must be made--uses more time and memory)
+
+Note ReadComplex and WriteComplex print using different syntax because
+ReadComplex has POINTER to complex, but WriteComplex has complex.
+
+/*Source: struct8.c*/
+#include <stdio.h>
+struct complex {
+                 int r;
+                 int i;
+       };
+void ReadComplex(struct complex *c);
+void WriteComplex(struct complex w);
+
+int main(void) {
+  struct complex A1, A2;
+  ReadComplex(&A1);
+  WriteComplex(A1);
+  ReadComplex(&A2);
+  WriteComplex(A2);
+  return 0;
+}
+void WriteComplex(struct complex w) {
+     printf("Write it: %d + %di\n", w.r, w.i);
+}
+
+void ReadComplex(struct complex *c) {
+  printf("Enter complex: ");
+  scanf("%d %d",&(c->r), &(c->i));
+  printf("Read in: %d + %di\n",c->r, c->i);
+}
+
+    100 104 ...  204 208 ... 504 508 ... 530
+   ---------   ---------    ---------    -----
+...|   |   |...|   |   | ...|   |   |... |   |
+   ---------   ---------    ---------    -----
+      A1           A2           w          c
+
+
+
+/*Source: struct9.c*/
+#include <stdio.h>
+struct complex {
+                 int r;
+                 int i;
+       };
+
+void ScalarMult(int i, struct complex *p);
+void PrintComplex(struct complex *p);
+
+int main(void) {
+  struct complex C={4,-2};
+  //struct complex C; C.r=4; C.i=-2;
+
+
+  ScalarMult(3,&C);
+  PrintComplex(&C);
+  return 0;
+}
+void ScalarMult(int m, struct complex *p) {
+//pointer is required since mutating p
+  p->r = p->r * m;
+  p->i = p->i * m;
+}
+
+void PrintComplex(struct complex *c){
+     //pointer unnecessary since not mutating p
+     //printf("%d + %di\n", c->r, c->i);
+     printf("%d + %di\n", (*c).r, (*c).i);
+}
+
+
+
+<<C's Time and Date Functions use Structures>>
+
+structure named tm contains info about current time & date
+tm is defined in <time.h>  (man time.h)
+
+struct tm {
+  int tm_sec;   //seconds, 0-60
+  int tm_min;   //minutes, 0-59
+  int tm_hour;  //hours, 0-23
+  int tm_mday;  //day of month, 1-31
+  int tm_mon;   //months since Jan, 0-11
+  int tm_year;  //years since 1900
+  int tm_wday;  //days since Sunday 0-6
+  int tm_yday;  //days since Jan 1, 0-365
+  int tm_isdst; //daylight savings time flag
+  };
+
+//seconds since the Epoch 1970-01-01
+time_t time(time_t *time1);   //man 2 time
+
+//breaks down time above & stores in structure tm
+struct tm *localtime(time_t *time); //man localtime
+
+
+/*Source: tm1.c
+  Purpose: to display current system time and date
+*/
+#include <stdio.h>
+#include <time.h>
+
+int main(void) {
+  struct tm *systime;
+  time_t t;
+
+  t = time(NULL);            //seconds since the Epoch
+  systime = localtime(&t);   //break down into struct tm
+  printf("Time is %d:%d:%d\n",
+          systime->tm_hour, systime->tm_min, systime->tm_sec);
+  printf("Date is %d/%d/%d\n",
+          systime->tm_mday,
+          systime->tm_mon+1,
+          systime->tm_year+1900); //since it is year - 1900
+  return 0;
+
+}
+
+For more precise time (down to nanoseconds) use clock_gettime()
+
+C has other structures to give programmer access to
+system information. e.g.,
+
+ -dirent.h lets you access the linux filesystem (files, dirs,
+   their perms, etc.) See man readdir
+
+   struct dirent {
+       ino_t          d_ino;       // inode (index node)=unique identifier for entry
+       off_t          d_off;       // offset to the next dirent
+       unsigned short d_reclen;    // length of this record
+       unsigned char  d_type;      // type of entry
+       char           d_name[256]; // filename
+   };
+   Only d_ino and d_type are guaranteed to be supported in all filesystem types
+   See entries.c  It prints all entries in current directory
+
+ -div function from stdlib.h gives quotient and remainder
+    div_t div(int numer, int denom);
+
+    typedef struct _div_t {
+      int quot;
+      int rem;
+    } div_t;
+
+
+  Could just use / and %, but
+    -div does both in one operation (more efficient) if architecture has instruction
+    -but typically if code has / and %, the compiler will optimize to use one
+     instruction if architecture has one, anyway
+
+
+
+<<Nested Structures>>
+
+A point has x- and y-coordinates:
+
+   typedef struct {
+     float x;
+     float y;
+   } point;
+
+Geometric shapes can be defined by groups of points.
+   typedef struct {
+     point vertex1;
+     point vertex2;
+     point vertex3;
+   } triangle;
+
+struct10.c has triangle example.
+
+struct7.c   --Car program with new nested structure for dateBought
+struct7F.c  --like struct7.c, but
+              (a) reads cars from file carFile using function readCar, and
+              (b) uses variable length array
+struct7FF.c --like struct7F.c, but function readCars reads all cars at once
+              from file carFile. Simply illustrates passing more parameters
+              to the read function.
+
+
+
+
+<<< Linked Lists >>>
+
+A list could be implemented any number of ways.
+One such way is a linked list.
+
+Generally, a linked list could be described as:
+
+   ____   ______    _____    ______              ______
+   | -|-->|e1|-|-->|e2|-|--->|e3|-|-->  .... --->|en|-|
+   ----   ------   ------    ------              ------
+   List
+
+where ei is the ith element on the list.
+Therefore, the list c b a  can be this linked list:
+
+   ____   ______    _____    ______
+   | -|-->|c |-|-->|b |-|--->|a |-|
+   ----   ------   ------    ------
+   List
+
+
+A "null" pointer signifies end of linked list (NULL in stdlib.h)
+
+Similar to how Lisp implements a list:
+ Each cell of the list is called a cons, and is composed of
+ 2 pointers, the car and the cdr.
+
+Data structure for the nodes:
+
+   struct node {
+        char ch;
+        struct node *next;
+   };
+
+-------------------------------------------------------------------
+from here on, may write "list" to mean "linked list"
+-------------------------------------------------------------------
+
+
+/*Source list.c
+  Making the list is done inefficiently here for illustration,
+  but normally one would write a function, such as Add, so that
+  a call such as Add(List,'a') would add an 'a' to the List
+*/
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct node NodeType;
+
+struct node {
+        char ch;
+        NodeType *next;  //or: struct node *next;
+   };
+
+int main(void) {
+
+NodeType *Node,   //a list node
+         *List,   //a list
+         *ptr;    //a temp var to move along a list, node by node
+
+List=NULL;        // _____
+                  // | - |    The empty list, where "-" is null ptr
+                  // -----
+                  //  List
+
+Node=(NodeType *) malloc(sizeof(NodeType));
+Node->ch='a';                  // ____   ______
+Node->next=NULL;               // | -|-->|a |-| where "-" is null ptr
+                               // ----   ------
+                               // Node
+printf("Node.ch: %c\n", Node->ch);      //or (*Node).ch
+printf("Node.next: %p\n", Node->next);
+                                           // ____   ______
+List=Node;                                 // | -|-->|a |-|
+printf("List.ch: %c\n", List->ch);         // ----   ------
+printf("List.next: %p\n", List->next);     // List
+
+Node=(NodeType *) malloc(sizeof(NodeType));
+Node->ch='b';                     // ____   ______
+Node->next=NULL;                  // | -|-->|b |-|
+                                  // ----   ------
+                                  // Node
+
+Node->next=List;                  // ____   ______   _____
+List=Node;                        // | -|-->|b |-|-->|a |-|
+                                  // ----   ------   ------
+                                  // List
+/*print out list*/
+
+printf("------------\nList is:\n------------\n ");
+for (ptr=List; ptr!=NULL; ) {
+  printf(" %c ", ptr->ch);
+  ptr=ptr->next;
+}
+printf("\n");
+
+printf("------------\nDetail :\n------------\n");
+for (ptr=List; ptr!=NULL; ) {
+  printf("List.ch: %c\n", ptr->ch);
+  printf("List.ch %p List.next: %p\n", &((*ptr).ch), (*ptr).next);
+  ptr=ptr->next;
+}
+return 0;
+}
+
+
+<< Adding to List >>
+  Add(char, list) puts char on front of list like Lisp cons
+  See ListAddAsciiArt for a diagram for this program
+
+/*Source add.h
+  header file for add.c
+  The #ifndef preprocessor directive is used so that the
+  compiler will not see the struct definition twice (in
+  case it is also included by another file too).
+  Why?  Later, we make search.h which also needs the
+  struct definition. If we write a main that needs both
+  add.h and search.h, compiler would get duplicate struct
+  definitions which could cause an error
+
+*/
+#ifndef NodeTypeSeen
+#define NodeTypeSeen
+typedef struct node {
+        char ch;
+        struct node *next;
+   } NodeType;
+#endif
+void Add(char c, NodeType **L );
+
+/*Source add.c
+  function to add a char to the front of a list
+  Similar to cons in Lisp/scheme
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "add.h"
+
+/*Note: need to pass address of L so that L can be modified.
+  If just passed L, any changes to L inside function would
+  be lost upon function return. e.g., calling add(List,ch)
+  would not cause List to be changed in main after add returns
+*/
+void Add(char c, NodeType **L) {
+
+NodeType *new;
+new=(NodeType *) malloc(sizeof(NodeType)); //needs error checking
+new->ch=c;
+new->next=*L;
+*L=new;
+}
+
+
+/*Source addmain.c
+  program to use function Add (in file add.c) to add to front
+  of a list
+  See ListAddAsciiArt for illustration of first 2 Adds
+*/
+#include <stdio.h>
+#include "add.h"
+
+int main(void) {
+
+ NodeType *List,    //a list
+          *ptr;     //a temp var to move along a list, node by node
+ char      ch;      //char to add to front of list
+
+ List=NULL;
+
+ for (ch='a'; ch<'f';ch++)    //add a b c d e, each to front of list
+   Add(ch,&List);             //need & so List can be changed
+
+ printf("List is: ");  /*print list*/
+ for (ptr=List; ptr!=NULL; ) {
+   printf(" %c ", ptr->ch);
+   ptr=ptr->next;
+ }
+ printf("\n");
+
+return 0;
+}
+
+
+<< Searching >>
+
+  See ListSearchAsciiArt for a diagram for this program
+
+/*source: search.c
+  Search a list to determine if given character is in list
+ */
+#include "search.h" //for NodeType definition
+#include <stdio.h>  //for NULL
+int Srch(char item, NodeType *L ) {
+  NodeType *p;
+  for (p=L; p != NULL; p = p->next)
+    if (p->ch == item) return 1;
+  return 0;
+}
+
+Can modify addmain.c to do a search:
+
+/*Source addmainS.c
+  compile: gcc addmainS.c add.c search.c
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "add.h"
+#include "search.h"
+
+int main(void) {
+
+ NodeType *List,   /*a list, like in scheme, except all char*/
+          *ptr;    /*a temp var to move along a list, node by node*/
+ char     ch;      /*char to add to front of list*/
+ char     item;    /*char to search for*/
+
+ List=NULL;
+
+ for (ch='a'; ch<'f';ch++)
+ Add(ch,&List);
+
+ printf("List is: ");
+ for (ptr=List; ptr!=NULL; ) {
+   printf(" %c ", ptr->ch);
+   ptr=ptr->next;
+ }
+ printf("\n");
+
+ /*repeatedly search for a given item in list*/
+ printf("Enter char to search for (EOF to quit): ");
+ item=getchar();
+ while (item!=EOF) {
+    if ((Srch(item,List))==1) printf("found\n");
+    else printf("not found\n");
+    getchar();  //read enter key
+    printf("Enter char to search for (EOF to quit): ");
+    item=getchar();
+ }
+return 0;
+}
+
+
+
+HMWK:
+Write a version of Add that does not mutate (change) the list; instead,
+it should return a new list.
+The function prototype could be NodeType *Add(NodeType *L, char c);
+Optional HMWK:
+Write functions for first and rest as follows:
+first returns a copy of the first item on the
+list (error if empty list)
+rest returns a list that is the given list with the first item removed.
+(error if empty list).
+first should return a character and rest should return a list.
+
+HMWK:
+Write function InsertO which inserts a given item into a list, keeping
+the list in order.
+Write function SrchO which searches an ordered list for the given item.
+Note that if the item is not in the list, search can terminate as soon
+as it finds an item larger than the searched-for item.
+
+-------------------------------------------------------------------
+Begin OPTIONAL
+
+
+<<< Abstraction in C >>>
+
+-in CS, abstraction generally refers to the principle of:
+  Hiding low-level details of implementation with higher-level interface
+-modularity helps accomplish this
+
+-ADT implementation provides information hiding and modularity to
+ varying extents
+
+-user USES the ADT; programmer IMPLEMENTS the ADT
+ e.g., strings in C
+    -we (user) use string functions, such as strcmp, strlen
+    -someone else (programmer) implemented the string functions/macros
+
+-ADTs in C (other than those supplied with OS):
+  -programmer supplies
+     -object code for functions/macros, etc. (.o files)
+     -definitions of  functions/macros, etc. (.h files)
+  -user
+     -writes code that #includes the programmer's .h,
+     -compiles own code with programmer's .o file
+  -function source code (.c) "hidden" from user
+
+
+USER PROGRAM CODE, using a supplied list ADT:
+
+/*Source userlistADT.c
+  compile: gcc userlistADT.c listADT.o
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "listADT.h"
+
+int main(void) {
+  List L;
+  init(&L);
+  add(&L,'a'); add(&L,'b'); add(&L,'c');
+  print(L);
+  printf("Length is %d\n",length(L));
+return 0;
+}
+
+PROGRAMMER CODE (list implementer):
+
+/*Source listADT.h
+  lists are type List
+*/
+typedef struct node NodeType;
+struct node {
+        char ch;
+        NodeType *next;
+   };
+typedef struct {
+        int length;
+        NodeType *head;
+    } List;
+void init(List *L) ;
+void add(List *L, char c) ;
+void print(List L) ;
+int length(List L) ;
+
+
+/*Source listADT.c
+  User cannot see this file. User only gets the listADT.o file
+  User compiles listADT.o with their main to use a list ADT
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "listADT.h"
+
+void init(List *L) {
+   L->length=0;
+   L->head=NULL;
+}
+int length(List L) {
+  return L.length;
+}
+void add(List *L, char c) {
+  NodeType *new;
+  new=(NodeType *) malloc(sizeof(NodeType)); //error-check this
+  new->ch=c;
+  new->next=L->head;
+  L->head=new;
+  L->length++;
+}
+void print(List L) {
+ int i; NodeType *p;
+ printf("List is: ");
+ for (i=0,p=L.head; i<L.length; i++,p=p->next) {
+   printf(" %c ", p->ch);
+ }
+ putchar('\n');
+}
+
+<< Hiding the Implementation Details >>
+
+Above code has NOT COMPLETELY hidden list ADT implmenetation:
+
+  -User can see List data structure in listADT.h
+  -User can mess around with list directly
+  -User NOT forced to only operate on List via provided functions
+      e.g., user may try to
+            -shorten list by setting some pointer to NULL
+            -add a node between two other nodes
+  -User might accidentally corrupt list.
+
+
+If programmer selling Off-The-Shelf code to a 3rd party (user),
+they want to COMPLETELY hide implementation details from user, so
+   -user can't "see" the data structure itself (so can't mess
+    around with it),
+   -user is forced to access data structure only through the given
+    functions.
+
+How to do this in C?
+
+Typically:
+  -User only gets ADT.h and ADT.o (NOT ADT.c), and documentation
+   saying how to use the ADT
+  -User includes ADT.h in own program
+  -User compiles own program with ADT.o
+  -ADT.h has no ADT implementation details, only (void *)
+  -ADT.[co] has ADT implementation details (structs etc), and
+   casts (void *) to (ADT *) as necessary within ADT functions
+
+/*Source: main.c
+  example of how to hide details of ADT from user
+  by keeping struct details out of complex.h, and only in complex.c
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include "complex.h"
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    1,1           Top

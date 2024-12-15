@@ -1,0 +1,40 @@
+
+/*Source:  prog.c */
+#include <stdio.h>
+#include "myfuncs.h"
+int main(void) {
+  double d=19.54;
+  outchar('A');
+  outchar('B');
+  outchar(G);
+  outchar('\n');
+  printf("%lf\n",doubleDog(d));
+  return 0 ;
+}
+
+/*Source:  myfuncs.c */
+#include <stdio.h>
+#include "myfuncs.h"
+void outchar(char c) {
+  printf("%c %c ",c,G);
+}
+double doubleDog (double d) {
+ return(d*2.0);
+}
+
+/*Source:  myfuncs.h  */
+#define G 'v'           //see macros in c2.txt
+void outchar(char c);
+double doubleDog(double d);
+
+Compile all source:
+ gcc prog.c myfuncs.c
+Can compile 1 or more into object code first:
+ gcc -c myfuncs.c
+ gcc -c prog.c
+Then create executable by:
+ gcc prog.o myfuncs.o
+or
+ gcc prog.c myfuncs.o
+or
+ gcc prog.o myfuncs.c

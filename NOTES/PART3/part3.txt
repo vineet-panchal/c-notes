@@ -1,0 +1,933 @@
+
+<<Pointers and String Literals>>
+
+Remember can declare p to refer to array A:
+
+  char A[5]; fgets(A,5,stdin);
+  char *p;   p=A;
+  100  101  102  103   104        236       300
+  -------------------------      ------     ------
+  |    |    |    |    |    | ... |100 | ... |100 |
+  -------------------------      ------     ------
+                                   A          p
+
+when compiler encounters a string literal, it
+  stores it in a string table
+  generates a pointer to the string (address)
+
+This is OK:
+            char *p;
+            p="AbC";
+            printf("%s",p);
+
+  500  501  502  503   504        400
+  -------------------------      ------
+  | A  | b  | C  | \0 |    | ... |500 |
+  -------------------------      ------
+                                   p
+This is BAD:
+            char *p;
+            fgets(p,40,stdin);    //or gets(p)
+            printf("%s",p);
+
+Why bad?
+   p has no storage allocated for its string. It might run OK
+   sometimes. Other times it won't, because the value pointed
+   to by p is not an accessible storage location, or it IS,
+   but that location gets overwritten.
+
+Suppose Memory has junk in it (as usual)
+            1200   1208   1212   ...
+         ------------------------
+      ...  |  0   |1025 | 982  | ...
+         ------------------------
+
+char *p;
+            1200   1208   1212   ...
+         ------------------------
+      ...  |  0   |1025 | 982  | ...
+         ------------------------
+              p
+
+fgets(p,40,stdin);  //tries to store string at memory location
+                    //0, which is reserved for OS. Error.
+                    //segmentation fault
+
+
+
+<<Pointers as Parameters>>
+
+All arguments in C passed by value
+
+Same for arrays. But the value happens to be a pointer.
+
+int A[20];
+
+           100  104  108  112  116  ...  176 ...  300
+           ------------------------     -----     ---
+           |    |    |    |    |   |... |   |... |100|
+           ------------------------     -----     ---
+           A[0] A[1] A[2] A[3] A[4] ... A[19]      A
+
+A is the address where the array starts (address of A[0])
+Thus, a function call such as
+   sum(A)
+passes the value of A (i.e., 100) which is ADDRESS of A[0];
+so any changes to A within sum are retained (LIKE call by reference.)
+
+           100  104  108  112  116  ...  176 ...  300  ...  500
+           ------------------------     -----     ---       ---
+           |    |    |    |    |   |... |   |... |100| ... |100|
+           ------------------------     -----     ---       ---
+           A[0] A[1] A[2] A[3] A[4] ...            A         X
+
+/*Source: passArray.c  */
+#include <stdlib.h>
+#define LEN 5
+
+void doubleit(int *X) {
+  int i;
+  for (i=0;i<LEN; i++ )
+    X[i]=X[i]*2;
+  return;
+}
+//const means values POINTED TO by X cannot be changed
+//X itself can be changed, but only locally (inside printit)
+void printit(const int *X) {
+  int i;
+  for (i=0;i<LEN; i++ )
+      printf("%d ", X[i]);
+  printf("\n");
+  //X[i]=i;  //not permitted by compiler
+  //X=&i;    //permitted but change local to printit only
+}
+
+int main (void) {
+  int i, A[LEN];
+  for (i=0;i<LEN; i++ )
+      scanf("%d",&A[i]);
+  printf("A is: ");
+  printit(A);
+
+  doubleit(A);
+  printf("A after doubleit is: ");
+  printit(A);
+}
+
+
+Any change a function makes to its arguments are local only.
+
+        1200   1204    ...  1530   ...
+     ----------------      --------
+  ...  |  5   |     |  ... |  5   |...
+     ----------------      --------
+          a from main         a local to add1
+
+
+/*Source: callByVal.c  */
+#include <stdio.h>
+#include <stdlib.h>
+
+void add1 (int a) {
+     a = a + 1 ;
+}
+int main (void) {
+   int a=5;
+   add1(a);
+   printf("a is %d\n",a);   //prints 5
+}
+
+For any variable, can get a call-by-reference-like behavior by
+passing the address (using &) and then using * inside function
+to de-reference and modify the data
+  ( this explains the "&" in   scanf("%d", &num ); )
+
+
+        1200   1204    ...  1530   ...
+     ----------------      --------
+  ...  |  5   |     |  ... | 1200 |...
+     ----------------      --------
+          a from main         a local to add1
+
+
+/*Source: callByRefLikeBehavior.c  */
+#include <stdio.h>
+#include <stdlib.h>
+
+void add1 (int *a) {
+     *a = *a + 1 ;
+}
+int main (void) {
+   int a=5;
+   add1(&a);
+   printf("a is %d\n",a);
+}
+
+
+/*Source: sample14.c*/
+void swap(int *arg1, int *arg2);
+int main(void) {
+ int i=0, j=2;
+ printf("i is %d, j is %d \n", i,j);
+ swap(&i,&j);
+ printf("i is %d, j is %d \n", i,j);
+ exit(0);
+}
+
+/*Function: swap
+  Purpose:  swap values of 2 integers
+  Input:    addresses of the 2 integers to swap
+  Output:   none
+*/
+void swap(int *arg1, int *arg2 ) {
+  int temp;
+  temp = *arg1;
+  *arg1=*arg2;
+  *arg2=temp;
+}
+prints?
+
+  This shows memory just after int temp;
+
+        1200   1204   ...  1530   1538   1546
+     ---------------      ---------------------
+  ...  |  0  |   2 |  ... | 1200 | 1204 |    |
+     ---------------      ---------------------
+          i      j          arg1    arg2  temp
+
+
+
+When pass an array, its POINTER is passed, so array values
+are modified
+
+int A[2] = {1,2};
+           100  104   ...  300     500
+           ----------      ---     ---
+           | 1  | 2  |... |100|   |100|
+           ----------      ---     ---
+           A[0] A[1]        A       X
+
+/*Source: sample15.c */
+void swap1 (int X[2] );
+int main(void) {
+  int A[2]={1,2};
+  printf("%d %d \n", A[0], A[1] );
+  swap1(A);
+  printf("%d %d \n", A[0], A[1] );
+  exit(0);
+}
+void swap1 (int X[2] ) {
+  int temp;
+  temp = X[0];
+  X[0] = X[1];
+  X[1] = temp;
+}
+
+These function prototypes are all the same:
+void swap1(int X[2]);
+void swap1(int X[]);
+void swap1(int *X);
+
+
+
+
+<<Multiple Indirection>>
+
+
+char **mp, *p, ch;
+
+            1080    ...   1248   ...  1272
+         -----------   ----------   ----------
+      ...  |      | ... |      | ... |      |
+         -----------   ----------   ----------
+             mp            p            ch
+
+p=&ch; mp=&p; **mp='A';
+
+            1080    ...   1248   ...  1272
+         -----------   ----------   ----------
+      ...  | 1248 | ... | 1272 | ... |  A   |
+         -----------   ----------   ----------
+             mp            p            ch
+
+//same result as : ch='A' or *p='A'
+
+
+
+<<Precedence of Array & Ptr operations:>>
+See below for meaning of operators, and meaning of associativity
+
+Operator Precedence                   Associativity (see below)
+() [] -> .                             left
+++ -- sizeof ! ~ (type) + - * &        right (ALL ARE UNARY OPERATORS)
+*  /  %                                left
++  -                                   left  (BINARY)
+<< >>                                  left
+< <= > >=                              left
+== !=                                  left
+&                                      left  (BINARY)
+^                                      left
+|                                      left
+&&                                     left
+||                                     left
+?:                                     right
+= += -= *= /= %= &= ^= |= <<= >>=      right
+,                                      left
+
+Associativity means if 2 operators with equal precedence are
+in an expression, they will be done
+  -from left-to-right if left-assoc
+  -from right-to-left if right-assoc
+
+~ is one's complement (unary)
+! is logical not: if (!x)
+++ -- are unary inc/decrement prefix or postfix: i++ or ++i
+unary * unary &    are ptr dereference, address of
+<< >> left bit shift, right bit shift
+&& || logical and, or
+& | ^ bitwise and, or, Xor
+?: ternary operation (for conditional e.g., z = (a>b) ? a : b ;
+                      resolves to: z = a  OR  z = b  , depending
+Note:
+**a   means *(*a)
+&(&a) and &&a are invalid
+&a[1] means &(a[1])
+*a[1] means *(a[1])
+
+Q4:
+  WHAT IS THE PURPOSE OF THE mystery FUNCTION?
+
+   int mystery( char *A) {
+      int x=0;
+      while ( *A++) x++;
+      return x;
+   }
+
+    char *str="xyz";
+Q5:  Suppose it is called from main:  x=mystery(str);
+     Does mystery corrupt main's str?
+
+
+<<errno>>
+
+//source sqrt.c
+//compile with math library flag: gcc sqrt.c -lm
+//see what perror prints on stderr
+#include <stdio.h>
+#include <errno.h>
+#include <math.h>
+#define POSITIVE 25
+#define NEGATIVE -25
+
+int main(void){
+
+  double ret;
+  errno = 0;   //declared in errno.h
+  ret = sqrt(NEGATIVE);
+  if (errno == EDOM) /*EDOM Signifies Domain Error*/
+     //fprintf(stderr,"Domain Error : Invalid Input To Function\n");
+     perror("sqrt");
+  else
+     fprintf(stderr,"Valid Input To Function\n");
+     //perror("sqrt");
+
+  errno = 0;
+  ret = sqrt(POSITIVE);
+  if (errno == EDOM)
+     fprintf(stderr,"Domain Error : Invalid Input To Function\n");
+  else
+     printf("Valid Input To Function\n");
+  return 0;
+}
+
+If a function sets errno, it is stated in man page. e.g.,
+man scanf
+then search for errno
+then search for ERROR
+
+End OPTIONAL
+-------------------------------------------------------------------
+
+
+<<Command line Processing>>
+
+main is a function--so can pass arguments to it using
+      Argument Count, and
+      Argument Vector
+Kind of like Java and Python except in C there are separate
+      variables for number of args and arg list
+
+int main(int argc, char *argv[])
+
+  suppose
+   -create executable:
+           > gcc cla.c
+   -and execute:
+           > ./a.out abc "de f" 74
+   -then inside program:
+      argc    is  4         // num args + 1 (#elts in argv)
+      argv[0] is "./a.out"  // program name
+      argv[1] is "abc"      // argument 1
+      argv[2] is "de f"     // argument 2
+      argv[3] is "74"       // argument 3
+
+  Program could print its COMMAND LINE ARGUMENTS (CLAs) as follows:
+
+  //Source: cla.c
+  int main (int argc, char *argv[]) {
+    int i;
+    for (i=1; i<argc; i++)
+        printf("command line argument %d is: %s\n", i, argv[i]);
+    printf("Name of program is: %s\n", argv[0]);
+    printf("argv[2][1] is: %c\n", argv[2][1]);
+    exit(0);
+  }
+
+
+/*Source:  sum.c
+  Purpose: to sum the integers supplied
+           on the command line
+  Input:   any number of integers in command line
+  Output:  the sum of the inputted numbers
+*/
+#include <stdio.h>
+#include <stdlib.h>
+
+int main (int argc, char *argv[]) {
+    int i,     /*for loop index*/
+    sum=0;     /*the sum of the arguments*/
+
+    for (i=1; i<argc; i++) {
+        sum = sum + atoi(argv[i]);
+    }
+    printf("Sum of the %d integers is %d\n", argc-1, sum);
+    exit(0);
+}
+
+
+
+<<File I/O>>
+
+already used fgets to read line of input from FILE stdin
+       fgets(S,40,stdin);
+already used fprintf to print to FILEs stdout, stderr
+      fprintf(stderr, "bad input: %d\n", x);
+
+Others: fscanf  (fp, format, arg_list...)
+        fgetc (fp); fputc (ch,  fp)
+        fputs (str, fp)
+        getline(&str, &n, fp);   //see below
+
+Open file named myfile for reading:
+
+   FILE *fp;   // FILE in stdio.h
+   if ( (fp = fopen("myfile","r")) == NULL ) {
+      fprintf(stderr,"fopen: Error opening file myfile \n");
+      //perror("fopen");
+      exit(1);
+   }
+   fscanf(fp, "%d", &i);
+
+
+Mode  (similar to Python's modes for open)
+----
+  r  open text file for read  (from beginning)
+  w  "                " write (create if !exist or clobber if exist)
+  a  append to text file      (write at end)
+
+  -------------------------------------------------------------
+  OPTIONAL
+  w+ open t.f. for r/w        (create if not exist, or clobber if exists)
+  r+ open t.f. for r/w        (at beginning) won't create; won't clobber.
+  a+ append or create for r/w (read from start, write to end)
+
+  Note: w & w+:  if file doesn't exist, created
+                 if exists, destroyed & new created (clobbered)
+        r+ reads and writes from same pointer which starts at beginning
+                 of file. If write first, overwrites existing file, and
+                 file pointer left at end of writing. Subsequent reading
+                 starts reading where write left off. Try program
+                 tryrplus.c which uses file tryrplusFILE, which should be
+                 the same as tryrplusFILEorig before running program
+        w+ no point reading immediately, because file is empty. If write
+                 first, file pointer ends up at end of writing.
+                 To subsequently read what wrote, frewind(fp); to get
+                 pointer back to start.
+
+  Get filepointer position, or move it:
+     fseek, ftell, rewind, fgetpos, fsetpos
+
+  -------------------------------------------------------------
+
+Close a file:
+
+  fclose(fp);     0   if successful
+                  EOF if not
+   exit will close all files before pgm termination anyway.
+   But...
+   if you have a long-running program, and you keep the
+   file open when not needed, you are using resources
+   unnecessarily. Also, if your program opens a lot of
+   files, you may run out of file descriptors, since each
+   program is allocated a fixed number of fd's by the system.
+   Also, your program might need to write into a file and
+   subsequently read what it wrote. Will need to close
+   the file after writing so can re-open for reading.
+
+
+fgetc(fp);     returns: char read if succ (cast to int)
+                        EOF otherwise
+fputc(ch,fp);  returns: char written if succ (cast to int)
+                        EOF otherwise
+
+/*Source cio.c
+  Purpose: write a string to file myfile1
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#define GOOD 0
+#define BAD 1
+
+int main(void) {
+   char str[40] = "String to write onto disk";
+   FILE *fp;
+   char ch, *p;
+   if ((fp = fopen("myfile1","w"))==NULL) {
+      fprintf(stderr,"fopen: Cannot open file\n");
+      //perror("fopen");
+      exit( BAD);
+   }
+   p=str;
+   while (*p)
+     if (fputc(*p++,fp)==EOF) {
+        fprintf(stderr,"Error writing file\n");
+        //perror("fputc");
+        fclose(fp);
+        exit(BAD);
+      }
+   fputc('\n',fp);
+   printf("file myfile1 now contains string: %s\n",str);
+   fclose(fp); /*good form*/
+   exit(GOOD);
+}
+
+Q6: Why did we use p at all? Why not just do *str++ ?
+
+/*Source: cio2.c
+  Purpose: display contents of myfile on stdout
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#define GOOD 0
+#define BAD 1
+int main(void) {
+  FILE *fp;
+  int ch;
+
+  if ((fp=fopen("myfile", "r"))==NULL) {
+     fprintf(stderr,"fopen: Cannot open file\n");
+     exit(BAD);
+  }
+  while (( ch = fgetc(fp)) != EOF)
+        fputc(ch,stdout);
+  fclose(fp);
+  exit(GOOD);
+}
+
+
+
+
+/*Source:  copy.c
+  Purpose: copy file f1 to file f2
+  Usage:   copy f1 f2
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define GOOD 0
+#define BAD 1
+
+int main (int argc, char *argv[]) {
+ FILE *f1, *f2;
+ int ch;
+
+ if (argc != 3) {
+    fprintf(stderr, "Usage: %s <source> <destination>\n",argv[0]);
+    exit(BAD);
+ }
+ if ((f1=fopen(argv[1],"r"))==NULL) {
+    fprintf(stderr, "Cannot open %s\n",argv[1]);
+    exit(BAD);
+ }
+ if ((f2=fopen(argv[2],"w"))==NULL) {
+    fprintf(stderr, "Cannot open %s\n",argv[2]);
+    exit(BAD);
+ }
+ while ((ch=fgetc(f1)) != EOF)
+        fputc(ch,f2);
+
+ fclose(f1); fclose(f2);
+ exit(GOOD);
+}
+
+
+
+fgetc() returns EOF if
+        1) error in reading
+        2) hits EndOfFile
+can test for these separately
+
+feof(fp)   non-0 if at EOF
+               0 otherwise
+ferror(fp) non-0 if error reading file
+               0 otherwise
+
+e.g., while-loop of copy pgm could be:
+
+while (!feof(f1)) {
+  ch=fgetc(f1);
+  if (ferror(f1)) {
+     fprintf(stderr, "Error reading ..."
+     exit(BAD);
+  }
+  if (!feof(f1)) fputc(ch,f2);
+  if (ferror(f2)) {
+     fprintf(stderr, "Error writing ... "
+     exit(BAD);
+  }
+}
+
+
+recall: fgets(str, length, fp);
+
+ reads chars from FILE fp and stores them
+ in array str, until
+   1. '\n' read (and transfered to s)
+   2. (length-1) chars have been read, or
+   3. EOF
+ returns ptr to str if successful
+         NULL ptr otherwise
+ Note: -already used it with fp as stdin
+       -the file read pointer is advanced "length-1" chars
+        in the file. e.g.,
+           fgets(X,3,f1); fgets(Y,3,f1); for file with
+           12345
+           abcde
+        will put "12" in X and "34" in Y
+
+fputs(str,fp)
+
+ writes str into file pointed to by fp
+ returns EOF if error; positive int otherwise
+
+
+
+<<perror for file processing>>
+You could also use function perror (print error) instead
+of fprintf(stderr...);
+When any system or library function is called *and fails*, its
+return code (integer) is put in a system variable that perror can
+access. (clobbered with each failure).
+perror translates the integer to an (human understandable) phrase
+and prints on stderr, prefixed by its string argument
+e.g.,
+FILE *fp;
+if ( (fp = fopen("myfile","r")) == NULL ) {
+   perror("fopen");
+   exit(1);
+}
+if "myfile" did not exist, stderr gets:
+fopen: No such file or directory
+(most of the built-in C functions use perror)
+
+All the error codes are defined in /usr/include/asm-generic/errno.h
+perror is in section 3 of man pages  (man 3 perror)
+
+
+
+<<< Dynamic Memory Allocation (DMA) >>>
+
+
+So far, have allocated storage (memory) at compile-time (stack memory)
+e.g., int x, A[MAX];
+
+Can also allocate/free storage at run-time (heap memory) with DMA
+
+Why use DMA?
+  -need the memory maintained after function returns
+   (stack memory is lost upon return)
+  -need LOTS of memory. Typical stack size is 1mb, so risk
+   crash if need more
+  -need to build up a structure (graph, list, array, etc) which may
+   get huge, or whose size changes dynamically, or whose
+   size is too difficult to calculate in advance. With DMA,
+   can request/free memory chunk by chunk, as required
+  -need ability to free no-longer-needed memory during program
+   execution
+  -want to create an array inside a function and return it to main
+   (array storage would be lost upon function return unless it
+   was allocated with DMA, or as a static array)
+
+
+calloc(NumItems, ItemSize);
+
+  NumItems: number of items of storage requested
+  ItemSize: size of each item (in bytes)
+
+
+  calloc returns
+      -a void (generic) pointer
+         -often cast to desired type, to improve readability,
+          but not required/necessary
+      -NULL if storage cannot be obtained
+
+  storage is initialized to zeros
+
+  see trycalloc.asciiart for memory illustration
+
+
+malloc(Size);
+
+  Size: number of bytes
+  like calloc, except
+    -must do the math ourselves
+    -storage not initialized
+
+e.g., to reserve an area for array of n integers
+/*source: trycalloc.c */
+#include <stdio.h>
+int main(void) {
+int n;         /*num elts of future array*/
+int *p, *tmp;  /*pointers to the future array*/
+int i;
+
+scanf("%d",&n);
+
+p = (int *) calloc (n, sizeof(int));
+if (p == NULL) {
+    fprintf(stderr,"calloc failed\n");  //or perror("calloc");
+    exit(0);
+}
+tmp = p;
+/*load array with 0,1,2,...(n-1) */
+for (i=0; i<n; i++)
+    *tmp++ = i;
+    //tmp[i]=i;  //same assignment
+    //  p[i]=i;  //same assignment
+
+for (i=0; i<n; i++)
+    printf("p[%d] is %d\n",i,p[i]);
+/* various ways to print items, e.g.,
+tmp = p;
+for (i=0; i<n; i++)
+    printf("p[%d] is %d\n",i,*tmp++);
+*/
+exit(1);
+}
+
+Q: Why use *tmp++ in first loop? Why not just use *p++?
+
+
+If use malloc instead of calloc in above:
+p = (int *) malloc (n * sizeof(int));
+
+
+All heap memory freed upon program completion.
+But if memory no longer needed *during* program execution,
+could free it immediately to release storage
+
+A long-running program, like the linux operating system itself,
+or a cell phone OS or persistent app, must free its
+no-longer-needed memory, or eventually, program's allocation
+attempt will fail, even though there is lots of unused memory.
+
+free(p);
+Note that free is for DMA. Cannot free stack memory. If try,
+compiles (possibly with warning) but gives run-time error.
+
+
+Can dynamically allocate strings similarly.
+See trycallocString.c
+
+
+String Example using malloc.
+  Remember these get same amount of storage:
+    p = (int *) calloc (n, sizeof(int));
+    p = (int *) malloc (n* sizeof(int));
+  For strings then:
+    p = (char *) calloc (n, sizeof(char));
+    p = (char *) malloc (n* sizeof(char));
+  But for malloc, sizeof(char) is unnecessary, since char is 1 byte
+
+/*source: stralloc.c*/
+#include <stdio.h>
+#include <stdlib.h>
+int main(void){
+char *A;
+int max=0;
+
+//need to add error-checking
+printf("enter max string length: ");
+scanf("%d",&max); while ((getchar())!='\n'); //get past \n char
+A=(char *)malloc(max+1); //room for null char
+printf("enter string: ");
+fgets(A,max+1,stdin);
+printf("Third char is: %c\n",*(A+2)); //or A[2]
+printf("string is: %s\n",A);
+exit(0);
+}
+
+
+
+Swap 2 strings without moving their characters in memory:
+       (strings allocated using DMA)
+
+//Source: swap_string2.c
+#define _GNU_SOURCE   //for function strchrnul
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define L 6
+
+void swap_string2( char **A, char **B) {
+ char *Z;
+ Z=*A;
+ *A=*B;
+ *B=Z;
+}
+
+int main (void) {
+ char *X, *Y;
+ X=malloc(L);                 //error-check this
+ Y=malloc(L);                 //error-check this
+ //L-2 below to ensure \n is read (otws Y gets tail of line1).
+ printf("Enter string1 (max length %d) : ",L-2);
+ fgets(X,L,stdin);
+ *(strchrnul(X,'\n'))='\0';  //remove newline, if there
+ printf("Enter string2 (max length %d) : ",L-2);
+ fgets(Y,L,stdin);
+ *(strchrnul(Y,'\n'))='\0';
+ printf("X: %s  ", X); printf("Y: %s\n", Y);
+ swap_string2(&X, &Y);
+ printf("X: %s  ", X); printf("Y: %s\n", Y);
+}
+
+Before call to function swap_string2:
+
+   50   58                   100 101 102       300 301 302
+-----------------------------------------------------------
+| 100 | 300 |   |   |       | a | b | c | ...  | d | e | f | ...
+-----------------------------------------------------------
+  X      Y                   heap
+
+In call to function swap_string2 (after Z=*A):
+   50   58                 100 101 102       300 301 302
+----------------------------------------------------------
+| 100 | 300 |50 |58 |100|...| a | b | c | ...  | d | e | f | ...
+----------------------------------------------------------
+  X      Y    A   B  Z
+
+After  call to function swap_string2:
+   50   58                 100 101 102       300 301 302
+--------------------------------------------------------
+| 300 | 100 |   |   |     | a | b | c | ...  | d | e | f | ...
+--------------------------------------------------------
+  X      Y
+
+
+Q: What happens if the first string entered is too long, "abcde"?
+
+
+
+Swap 2 strings without moving their characters in memory:
+       (strings are string literals)
+
+//Source: swap_string1.c
+//Source: swap_string1.c
+#include <stdio.h>
+#include <string.h>
+
+void swap_string1( char **A, char **B) {
+ char *Z;
+ Z=*A;
+ *A=*B;
+ *B=Z;
+}
+
+int main (void) {
+ char *X="abc", *Y="def"; //why not char X[4]="abc", Y[4]="def" ?
+ printf("X: %s  ", X); printf("Y: %s\n", Y);
+ swap_string1(&X, &Y);
+ printf("X: %s  ", X); printf("Y: %s\n", Y);
+
+}
+
+
+
+<<getline>>
+
+ -in stdio.h
+ -similar to readline (see c2Lab) but may read from a file or stdin
+ -includes the newline character, if one was found (like fgets)
+ -will allocate a correct-sized buffer for us, if arguments set properly
+ -alternately, WE can allocate buffer, but must use malloc
+ -getline will re-allocate buffer if we made it too small
+ -if we enter abc on stdin, getline allocates 5 bytes of storage
+
+  100  101  102  103   104        236       300        432
+  -------------------------      -----     ------     ------
+  |    |    |    |    |    | ... | 0 | ... |    | ... |NULL|
+  -------------------------      -----     ------     ------
+                                    n        len        str
+
+/*Source: readOneLine.c              */
+/*Input:  a string any length        */
+/*Output: the string and its length  */
+/*Purpose: example of getline        */
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+int removeNewline(char *S);
+
+int main(void) {
+  char *str = NULL;  //str=NULL and n=0 are both needed to tell
+  size_t n=0;        //getline to allocate storage for us
+  ssize_t len;       //getline's return value (length of string in str)
+
+  printf("Enter a string: ");
+  len = getline(&str,&n,stdin);
+  if ( len == -1 ) {
+     fprintf(stderr,"error reading input\n");
+     exit(1) ;
+  }
+  printf("string is:%s:\n",str);
+  printf("len is:%zu:\n",len);
+
+  len = len - removeNewline(str);
+  printf("\nremoved newline and now\n");
+  printf("string is:%s:\n",str);
+  printf("length is:%zu:\n",len);
+
+  exit(0);
+}
+
+
+//returns 1 if a newline was removed, 0 otherwise
+int removeNewline(char *S) {
+  char *p;
+  if ((p=strchr(S, '\n')) != NULL) {//if there is a newline
+      *p = '\0';
+      return 1 ;
+  }
+  return 0;
+}
+
+Can test case of no newline by:
+echo -n "abc" | ./a.out
+
+
+
+
+                                                                                                                                                
